@@ -1,6 +1,8 @@
 import requests
 import json
 from bs4 import BeautifulSoup
+import pandas as pd
+
 
 
 INITIAL_URL = 'https://www.50pros.com/top-50/top-50-advertising-firms-hire-an-advertising-agency'
@@ -40,19 +42,56 @@ def scrape_category(url: str):
     return companies
 
 
-def main():
+def save_raw_json():
     result = []
     categories = get_all_url_endpoints()
     n = len(categories)
     i = 1
     for category in categories:
         companies = scrape_category(url=category['url'])
-        result.append({'category_name': category['name'], 'companies': companies})
+        result.append({category['name']: companies})
         print(f"{i} of {n}. Category: {category['name']}. {len(companies)} companies scraped.")
         i += 1
     with open(file='raw_data.json', mode='w') as f:
         json.dump(obj=result, fp=f, indent=2)
     print("Raw data saved")
+
+
+def json_to_df():
+    with open(file='raw_data.json', mode='r') as f:
+        data_json = json.load(f)
+    formatted_data = {
+        'category': [],
+        'company_name': [],
+        'website': [],
+        'location': [],
+        'tags': [],
+        'description': [],
+        'year': [],
+        'staff': [],
+        'stars': []
+    }
+    for category in data_json:
+        category_name = list(category.keys())[0]
+        for company in category[category_name]:
+            notnull_tags = [tag for tag in company['tags_3'] if tag]
+            tags_str = ', '.join(notnull_tags)
+            formatted_data['category'].append(category_name)
+            formatted_data['company_name'].append(company['name'])
+            formatted_data['website'].append(company['url'])
+            formatted_data['location'].append(company['location'])
+            formatted_data['tags'].append(tags_str)
+            formatted_data['description'].append(company['description'])
+            formatted_data['year'].append(company['date'])
+            formatted_data['staff'].append(company['people'])
+            formatted_data['stars'].append(company['stars'])
+    return pd.DataFrame(data=formatted_data)
+
+
+def main():
+    # save_raw_json()
+    df = json_to_df()
+    df.to_excel(excel_writer='all_companies.xlsx', index=False)
 
 
 if __name__ == '__main__':
