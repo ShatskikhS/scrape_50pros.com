@@ -26,7 +26,7 @@ def scrape_category(url: str):
     companies = []
     for card in card_divs_list:
         tag_3_tags = card.find_all(class_="tag-3")
-        tags_3 = [tag.text for tag in tag_3_tags]
+        tags_3 = [tag.text for tag in tag_3_tags if tag.text]
         footer_tags = card.find_all(class_="text-block-85")
         companies.append({
             'name': card.find(class_="tool-name").text,
@@ -74,13 +74,11 @@ def json_to_df():
     for category in data_json:
         category_name = list(category.keys())[0]
         for company in category[category_name]:
-            notnull_tags = [tag for tag in company['tags_3'] if tag]
-            tags_str = ', '.join(notnull_tags)
             formatted_data['category'].append(category_name)
             formatted_data['company_name'].append(company['name'])
             formatted_data['website'].append(company['url'])
             formatted_data['location'].append(company['location'])
-            formatted_data['tags'].append(tags_str)
+            formatted_data['tags'].append(', '.join(company['tags_3']))
             formatted_data['description'].append(company['description'])
             formatted_data['year'].append(company['date'])
             formatted_data['staff'].append(company['people'])
@@ -89,7 +87,7 @@ def json_to_df():
 
 
 def main():
-    # save_raw_json()
+    save_raw_json()
     df = json_to_df()
     df.to_excel(excel_writer='all_companies.xlsx', index=False)
 
